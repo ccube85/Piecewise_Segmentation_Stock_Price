@@ -10,7 +10,7 @@ from matplotlib.lines import Line2D
 
 
 def draw_plot(data, plt, plot_title):
-    ax = plt.subplot2grid((3, 3), (0, 0), rowspan=1, colspan=4, axisbg='#07000d')
+    ax = plt.subplot2grid((6, 4), (0, 0), rowspan=1, colspan=4, axisbg='#07000d')
     ax.plot(range(len(data)), data, alpha=0.8, color='red')
     title(plot_title)
     xlabel("Samples")
@@ -66,7 +66,7 @@ try:
 
     my_dpi=96
     #sliding window with regression
-    fig = plt.figure(num=None, figsize=(1280/my_dpi, 800/my_dpi), dpi=80, facecolor='w', edgecolor='k')
+    fig = plt.figure(num=None, figsize=(800/my_dpi, 800/my_dpi), dpi=80, facecolor='w', edgecolor='k')
     segments = segment.slidingwindowsegment(closep, fit.regression, fit.sumsquared_error, max_error)
     draw_plot(closep,plt,"Sliding window with regression")
     draw_segments(segments)
