@@ -1,0 +1,9 @@
+
+{
+  "_comment":"These values should be changed whenever the DB is changed, or credentials changed",
+  "HOST":"127.0.0.1",
+  "PORT":"3306",
+  "USER":"root",
+  "PASSWORD":"password",
+  "DB_NAME":"LittleThumb"
+}
