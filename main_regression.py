@@ -77,10 +77,10 @@ def draw_window(my_dpi, data, max_error):
         print(str(e), 'failed to pull pricing data')
 
     try:
-        date, closep = np.loadtxt(stockFile, delimiter=',', unpack=True,
+        date, closep_raw = np.loadtxt(stockFile, delimiter=',', unpack=True,
                                                               converters={0: mdates.bytespdate2num('%Y%m%d')})
-        SP = len(date)
-        SP = len(date)
+        print(closep_raw)
+        closep = closep_raw[::-1]
         # First subplot
         ax1 = plt.subplot2grid((3, 3), (0, 0), colspan=3)
         segments = segment.slidingwindowsegment(closep, fit.regression, fit.sumsquared_error, max_error)
