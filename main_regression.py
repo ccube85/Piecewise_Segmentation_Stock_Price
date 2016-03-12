@@ -206,8 +206,8 @@ if __name__ == '__main__':
     res = fetch_data_from_db(connection, stock)
 
     # Figure is built
-    # draw_window(MY_DPI, res, float(err))
-    draw_window_API(MY_DPI, float(err), stock)
+    draw_window(MY_DPI, res, float(err))
+    # draw_window_API(MY_DPI, float(err), stock)
 
 
 

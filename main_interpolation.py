@@ -31,7 +31,6 @@ def connection_to_db(path):
                                  cursorclass=pymysql.cursors.DictCursor)
     return connection
 
-
 def fetch_data_from_db(db, company):
     """
     All data contanining the stock price info are retrieved from the database given the stock name
@@ -60,8 +59,8 @@ def draw_window(my_dpi, data, max_error):
     :param max_error: maximum error allowed
     """
 
-    fig = plt.figure(figsize=(1000/my_dpi, 700/my_dpi), dpi=96, edgecolor='k', facecolor='black')
-    fig.suptitle("PIECEWISE SEGMENTATION INTERPOLATION", fontsize="15", color="white")
+    fig = plt.figure(figsize=(1000/my_dpi, 700/my_dpi), dpi=96, facecolor='black')
+    fig.suptitle("PIECEWISE SEGMENTATION INTERPOLATION", fontsize="15", color="white", fontweight='bold', bbox={'facecolor':'red', 'alpha':0.5, 'pad':10})
 
     try:
         stockFile = []
@@ -77,45 +76,30 @@ def draw_window(my_dpi, data, max_error):
         print(str(e), 'failed to pull pricing data')
 
     try:
-        date, closep = np.loadtxt(stockFile, delimiter=',', unpack=True,
+        date, closep_raw = np.loadtxt(stockFile, delimiter=',', unpack=True,
                                                               converters={0: mdates.bytespdate2num('%Y%m%d')})
-        SP = len(date)
+        closep = closep_raw[::-1]
         # First subplot
         ax1 = plt.subplot2grid((3, 3), (0, 0), colspan=3)
-        segments = segment.slidingwindowsegment(closep, fit.regression, fit.sumsquared_error, max_error)
-        draw_plot(closep,plt,"Sliding window with regression")
-        draw_segments(segments)
-
-        ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y\n%m'))
-        ax1.grid(True, color='#949494')
-        ax1.yaxis.label.set_color("w")
-        ax1.xaxis.label.set_color("w")
-        ax1.tick_params(axis='y', colors='w')
-        ax1.tick_params(axis='x', colors='w')
+        segments = segment.slidingwindowsegment(closep, fit.interpolate, fit.sumsquared_error, max_error)
+        draw_plot(closep,plt,ax1,"Sliding window with interpolation")
+        draw_segments(segments,'red')
         plt.ylabel('Stock Price')
         plt.title("Sliding window", color='w')
 
         # Second subplot
         ax2 = plt.subplot2grid((3, 3), (1, 0), colspan=3)
-        ax2.plot(date[-SP:], closep[-SP:], 'black', linewidth=0.5)
-        ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y\n%m'))
-        ax2.grid(True, color='#949494')
-        ax2.yaxis.label.set_color("w")
-        ax2.xaxis.label.set_color("w")
-        ax2.tick_params(axis='y', colors='w')
-        ax2.tick_params(axis='x', colors='w')
+        segments = segment.topdownsegment(closep, fit.interpolate, fit.sumsquared_error, max_error)
+        draw_plot(closep, plt, ax2, "Sliding window with interpolation")
+        draw_segments(segments,'green')
         plt.ylabel('Stock Price')
         plt.title("Top down", color='w')
 
         # Third subplot
         ax3 = plt.subplot2grid((3, 3), (2, 0), colspan=3)
-        ax3.plot(date[-SP:], closep[-SP:], 'black', linewidth=0.5)
-        ax3.xaxis.set_major_formatter(mdates.DateFormatter('%Y\n%m'))
-        ax3.grid(True, color='#949494')
-        ax3.yaxis.label.set_color("w")
-        ax3.xaxis.label.set_color("w")
-        ax3.tick_params(axis='y', colors='w')
-        ax3.tick_params(axis='x', colors='w')
+        segments = segment.bottomupsegment(closep, fit.interpolate, fit.sumsquared_error, max_error)
+        draw_plot(closep, plt, ax3, "Sliding window with interpolation")
+        draw_segments(segments,'blue')
         plt.ylabel('Stock Price')
         plt.title("Bottom up", color='w')
 
@@ -127,7 +111,7 @@ def draw_window(my_dpi, data, max_error):
 
 def draw_plot(data, plt,ax,plot_title):
     ax.plot(range(len(data)), data, alpha=0.8, color='black')
-    ax.grid(True, color='#949494')
+    ax.grid(True, color='#969696')
     ax.yaxis.label.set_color("w")
     ax.xaxis.label.set_color("w")
     ax.tick_params(axis='y', colors='w')
@@ -137,10 +121,10 @@ def draw_plot(data, plt,ax,plot_title):
     plt.title(plot_title)
     plt.xlim((0, len(data)-1))
 
-def draw_segments(segments):
+def draw_segments(segments,color):
     ax = gca()
     for segment in segments:
-        line = Line2D((segment[0],segment[2]),(segment[1],segment[3]),color="red")
+        line = Line2D((segment[0],segment[2]),(segment[1],segment[3]),color=color)
         ax.add_line(line)
 
 def draw_window_API(my_dpi, max_error, stockToFetch):
@@ -152,11 +136,11 @@ def draw_window_API(my_dpi, max_error, stockToFetch):
     """
 
     fig = plt.figure(figsize=(1000/my_dpi, 700/my_dpi), dpi=96, edgecolor='k', facecolor='black')
-    fig.suptitle("PIECEWISE SEGMENTATION INTERPOLATION", fontsize="15", color="white")
+    fig.suptitle("PIECEWISE SEGMENTATION INTERPOLATION", fontsize="15", color="white", fontweight='bold', bbox={'facecolor':'red', 'alpha':0.5, 'pad':10})
 
     try:
         print('Currently Pulling',stockToFetch)
-        urlToVisit = 'http://chartapi.finance.yahoo.com/instrument/1.0/'+stockToFetch+'/chartdata;type=quote;range=10y/csv'
+        urlToVisit = 'http://chartapi.finance.yahoo.com/instrument/1.0/'+stockToFetch+'/chartdata;type=quote;range=5y/csv'
         stockFile =[]
         try:
             sourceCode = urllib.request.urlopen(urlToVisit).read().decode()
@@ -178,24 +162,24 @@ def draw_window_API(my_dpi, max_error, stockToFetch):
         # First subplot
         ax1 = plt.subplot2grid((3, 3), (0, 0), colspan=3)
         segments = segment.slidingwindowsegment(closep, fit.interpolate, fit.sumsquared_error, max_error)
-        draw_plot(closep,plt,ax1,"Sliding window with regression")
-        draw_segments(segments)
+        draw_plot(closep,plt,ax1,"Sliding window with interpolation")
+        draw_segments(segments,'red')
         plt.ylabel('Stock Price')
         plt.title("Sliding window", color='w')
 
         # Second subplot
         ax2 = plt.subplot2grid((3, 3), (1, 0), colspan=3)
         segments = segment.topdownsegment(closep, fit.interpolate, fit.sumsquared_error, max_error)
-        draw_plot(closep, plt, ax2, "Sliding window with regression")
-        draw_segments(segments)
+        draw_plot(closep, plt, ax2, "Sliding window with interpolation")
+        draw_segments(segments,'green')
         plt.ylabel('Stock Price')
         plt.title("Top down", color='w')
 
         # Third subplot
         ax3 = plt.subplot2grid((3, 3), (2, 0), colspan=3)
         segments = segment.bottomupsegment(closep, fit.interpolate, fit.sumsquared_error, max_error)
-        draw_plot(closep, plt, ax3, "Sliding window with regression")
-        draw_segments(segments)
+        draw_plot(closep, plt, ax3, "Sliding window with interpolation")
+        draw_segments(segments,'blue')
         plt.ylabel('Stock Price')
         plt.title("Bottom up", color='w')
 
@@ -214,16 +198,16 @@ if __name__ == '__main__':
     PATH_AWS_DB = 'resources/AWS_DB_details.json'
 
     # Connection to the database
-    # connection = connection_to_db(PATH_AWS_DB)
+    connection = connection_to_db(PATH_AWS_DB)
 
     # Data is fetched from db
     stock = input("Stock name: ")
     err = input("Max error: ")
-    # res = fetch_data_from_db(connection, stock)
+    res = fetch_data_from_db(connection, stock)
 
     # Figure is built
-    # draw_window(MY_DPI, res, 0.8)
-    draw_window_API(MY_DPI, float(err), stock)
+    draw_window(MY_DPI, res, float(err))
+    # draw_window_API(MY_DPI, float(err), stock)
 
 
 
