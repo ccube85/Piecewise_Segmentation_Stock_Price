@@ -10,8 +10,8 @@ The three algorithms implemented are :
 All these algorithms are implemented and compared
 
 Both interpolation and regression are developed, as shows the pictures here below:
-![Alt text](./resources/regression.png?raw=true "Optional Title")
-![alt tag](./resources/regression.png)
+![Alt text](./resources/interpolation.png?raw=true "Interpolation")
+![Alt text](./resources/regression.png?raw=true "Interpolation")
 
 
 In order to run the script:
