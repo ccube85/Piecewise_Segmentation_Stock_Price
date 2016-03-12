@@ -21,4 +21,5 @@ In order to run the script:
 Input data comes from two sources:
 - Yahoo API: implemented in method 'draw_window_API'
 - Local Database (not included in the package)  : implemented in method 'draw_window'
+
 By default when class method 'draw_window_API'
