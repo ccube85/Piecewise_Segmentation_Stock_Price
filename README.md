@@ -10,6 +10,8 @@ The three algorithms implemented are :
 All these algorithms are implemented and compared
 
 Both interpolation and regression are developed, as shows the pictures here below:
+![alt tag](https://github.com/AleNegrini/Piecewise-Segmentation.git/resources/img.png)
+
 
 In order to run the script:
 - if you want to run the piecewise segmentation interpolation, run main_interpolation.py
