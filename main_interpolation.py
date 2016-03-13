@@ -1,9 +1,10 @@
 import matplotlib.pyplot as plt
 from ebcli.lib.utils import urllib
 from matplotlib.pylab import gca
-import matplotlib.ticker as mticker
 import matplotlib.dates as mdates
 import json
+import matplotlib.patches as mpatches
+
 
 import numpy as np
 import pymysql
@@ -13,6 +14,7 @@ import fit
 import segment
 
 plt.matplotlib.rcParams.update({'font.size': 9})
+
 
 def connection_to_db(path):
     """
@@ -30,6 +32,7 @@ def connection_to_db(path):
                                  charset='utf8mb4',
                                  cursorclass=pymysql.cursors.DictCursor)
     return connection
+
 
 def fetch_data_from_db(db, company):
     """
@@ -51,6 +54,57 @@ def fetch_data_from_db(db, company):
 
     return result
 
+
+def get_angular_coefficient(segment_set, index):
+    """
+    It returns the angular coefficient of the segment set
+    :param: segment expressed as a couple of points with two coordinates x and y
+    :return: the angular coefficient
+    """
+
+    current_segment = segment_set[index]
+    coeff_angular = (current_segment[3]-current_segment[1])/(current_segment[2]-current_segment[0])
+    return coeff_angular
+
+
+def get_constant_term(segment_set, index):
+    """
+    It returns the constant term of the segment set
+    :param: segment expressed as a couple of points with two coordinates x and y
+    :return: the angular coefficient
+    :return:
+    """
+    current_segment = segment_set[index]
+    coeff_constant_term = (current_segment[2]*current_segment[1]-current_segment[0]*current_segment[3])/\
+                          (current_segment[2]-current_segment[0])
+    return coeff_constant_term
+
+
+def evaluate_global_error(data, segment_set):
+    """
+    :param data: the set of close price data
+    :param segment_set: the set of segments
+    :return: the global error
+    """
+    current_segment = []
+    total_error = 0
+
+    for i in range(0, len(segment_set)):
+        error = 0
+        current_angular_coeff = get_angular_coefficient(segment_set, i)
+        current_constant_term = get_constant_term(segment_set, i)
+
+        # The equation of the line is y = current_angular_coeff * x + current_constant_term
+        for j in range((segment_set[i])[0], (segment_set[i])[2]):
+            y = current_angular_coeff * j + current_constant_term
+            current_segment.append(y)
+            error += abs(y - data[j])
+
+        total_error += error
+
+    return total_error
+
+
 def draw_window(my_dpi, data, max_error):
     """
     All data contanining the stock price info are retrieved from the database given the stock name
@@ -60,7 +114,7 @@ def draw_window(my_dpi, data, max_error):
     """
 
     fig = plt.figure(figsize=(1000/my_dpi, 700/my_dpi), dpi=96, facecolor='black')
-    fig.suptitle("PIECEWISE SEGMENTATION INTERPOLATION", fontsize="15", color="white", fontweight='bold', bbox={'facecolor':'red', 'alpha':0.5, 'pad':10})
+    fig.suptitle("PIECEWISE SEGMENTATION INTERPOLATION", fontsize="15", color="white", fontweight='bold', bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 10})
 
     try:
         stockFile = []
@@ -85,23 +139,23 @@ def draw_window(my_dpi, data, max_error):
         draw_plot(closep,plt,ax1,"Sliding window with interpolation")
         draw_segments(segments,'red')
         plt.ylabel('Stock Price')
-        plt.title("Sliding window", color='w')
+        plt.title("SLIDING WINDOW - ERROR "+str(evaluate_global_error(closep, segments)), color='Yellow', fontweight='bold')
 
         # Second subplot
         ax2 = plt.subplot2grid((3, 3), (1, 0), colspan=3)
         segments = segment.topdownsegment(closep, fit.interpolate, fit.sumsquared_error, max_error)
-        draw_plot(closep, plt, ax2, "Sliding window with interpolation")
-        draw_segments(segments,'green')
+        draw_plot(closep, plt, ax2, "Top down with interpolation")
+        draw_segments(segments, 'green')
         plt.ylabel('Stock Price')
-        plt.title("Top down", color='w')
+        plt.title("TOP DOWN - ERROR "+str(evaluate_global_error(closep, segments)), color='Yellow', fontweight='bold')
 
         # Third subplot
         ax3 = plt.subplot2grid((3, 3), (2, 0), colspan=3)
         segments = segment.bottomupsegment(closep, fit.interpolate, fit.sumsquared_error, max_error)
-        draw_plot(closep, plt, ax3, "Sliding window with interpolation")
+        draw_plot(closep, plt, ax3, "Bottom up with interpolation")
         draw_segments(segments,'blue')
         plt.ylabel('Stock Price')
-        plt.title("Bottom up", color='w')
+        plt.title("BOTTOM UP - ERROR "+str(evaluate_global_error(closep, segments)), color='Yellow', fontweight='bold')
 
         plt.subplots_adjust(hspace=0.3)
         plt.show()
@@ -109,7 +163,8 @@ def draw_window(my_dpi, data, max_error):
     except e:
         print("Error")
 
-def draw_plot(data, plt,ax,plot_title):
+
+def draw_plot(data, plt, ax, plot_title):
     ax.plot(range(len(data)), data, alpha=0.8, color='black')
     ax.grid(True, color='#969696')
     ax.yaxis.label.set_color("w")
@@ -121,11 +176,13 @@ def draw_plot(data, plt,ax,plot_title):
     plt.title(plot_title)
     plt.xlim((0, len(data)-1))
 
-def draw_segments(segments,color):
+
+def draw_segments(segments, color):
     ax = gca()
     for segment in segments:
         line = Line2D((segment[0],segment[2]),(segment[1],segment[3]),color=color)
         ax.add_line(line)
+
 
 def draw_window_API(my_dpi, max_error, stockToFetch):
     """
@@ -165,7 +222,8 @@ def draw_window_API(my_dpi, max_error, stockToFetch):
         draw_plot(closep,plt,ax1,"Sliding window with interpolation")
         draw_segments(segments,'red')
         plt.ylabel('Stock Price')
-        plt.title("Sliding window", color='w')
+        plt.title("SLIDING WINDOW - ERROR "+str(evaluate_global_error(closep, segments)), color='Yellow', fontweight='bold')
+
 
         # Second subplot
         ax2 = plt.subplot2grid((3, 3), (1, 0), colspan=3)
@@ -173,7 +231,7 @@ def draw_window_API(my_dpi, max_error, stockToFetch):
         draw_plot(closep, plt, ax2, "Sliding window with interpolation")
         draw_segments(segments,'green')
         plt.ylabel('Stock Price')
-        plt.title("Top down", color='w')
+        plt.title("TOP DOWN - ERROR "+str(evaluate_global_error(closep, segments)), color='Yellow', fontweight='bold')
 
         # Third subplot
         ax3 = plt.subplot2grid((3, 3), (2, 0), colspan=3)
@@ -181,7 +239,7 @@ def draw_window_API(my_dpi, max_error, stockToFetch):
         draw_plot(closep, plt, ax3, "Sliding window with interpolation")
         draw_segments(segments,'blue')
         plt.ylabel('Stock Price')
-        plt.title("Bottom up", color='w')
+        plt.title("BOTTOM UP - ERROR "+str(evaluate_global_error(closep, segments)), color='Yellow', fontweight='bold')
 
         plt.subplots_adjust(hspace=0.3)
         plt.show()
