@@ -132,6 +132,11 @@ def draw_window(my_dpi, data, max_error):
         date, closep_raw = np.loadtxt(stockFile, delimiter=',', unpack=True,
                                                               converters={0: mdates.bytespdate2num('%Y%m%d')})
         closep = closep_raw[::-1]
+
+        print(max(closep))
+
+        max_error = max(closep)*2.5;
+
         # First subplot
         ax1 = plt.subplot2grid((3, 3), (0, 0), colspan=3)
         segments = segment.slidingwindowsegment(closep, fit.regression, fit.sumsquared_error, max_error)
@@ -139,7 +144,6 @@ def draw_window(my_dpi, data, max_error):
         draw_segments(segments,'red')
         plt.ylabel('Stock Price')
         plt.title("SLIDING WINDOW - ERROR "+str(evaluate_global_error(closep, segments)), color='Yellow', fontweight='bold')
-
 
         # Second subplot
         ax2 = plt.subplot2grid((3, 3), (1, 0), colspan=3)
@@ -163,6 +167,72 @@ def draw_window(my_dpi, data, max_error):
     except e:
         print("Error")
 
+def draw_window(my_dpi, data):
+    """
+    All data contanining the stock price info are retrieved from the database given the stock name
+    :param my_dpi: dpi screen
+    :param data: data to be plot
+    :param max_error: maximum error allowed
+    """
+
+    fig = plt.figure(figsize=(1000/my_dpi, 700/my_dpi), dpi=96, facecolor='black')
+    fig.suptitle("PIECEWISE SEGMENTATION REGRESSION", fontsize="15", color="white", fontweight='bold', bbox={'facecolor':'red', 'alpha':0.5, 'pad':10})
+
+    try:
+        stockFile = []
+        try:
+            for eachLine in data:
+                splitLine = eachLine.split(',')
+                if len(splitLine) == 2:
+                    if 'values' not in eachLine:
+                        stockFile.append(eachLine)
+        except Exception as e:
+            print(str(e), 'failed to organize pulled data.')
+    except Exception as e:
+        print(str(e), 'failed to pull pricing data')
+
+    try:
+        date, closep_raw = np.loadtxt(stockFile, delimiter=',', unpack=True,
+                                                              converters={0: mdates.bytespdate2num('%Y%m%d')})
+        closep = closep_raw[::-1]
+        max_closep = max(closep)
+
+        if(max_closep > 2.0):
+            max_error = max(closep)*2.7;
+        else:
+            max_error = max(closep)/2.5;
+
+        print(max_error)
+
+        # First subplot
+        ax1 = plt.subplot2grid((3, 3), (0, 0), colspan=3)
+        segments = segment.slidingwindowsegment(closep, fit.regression, fit.sumsquared_error, max_error)
+        draw_plot(closep,plt,ax1,"Sliding window with regression")
+        draw_segments(segments,'red')
+        plt.ylabel('Stock Price')
+        plt.title("SLIDING WINDOW - ERROR "+str(evaluate_global_error(closep, segments)), color='Yellow', fontweight='bold')
+
+        # Second subplot
+        ax2 = plt.subplot2grid((3, 3), (1, 0), colspan=3)
+        segments = segment.topdownsegment(closep, fit.regression, fit.sumsquared_error, max_error)
+        draw_plot(closep, plt, ax2, "Sliding window with regression")
+        draw_segments(segments,'green')
+        plt.ylabel('Stock Price')
+        plt.title("TOP DOWN - ERROR "+str(evaluate_global_error(closep, segments)), color='Yellow', fontweight='bold')
+
+        # Third subplot
+        ax3 = plt.subplot2grid((3, 3), (2, 0), colspan=3)
+        segments = segment.bottomupsegment(closep, fit.regression, fit.sumsquared_error, max_error)
+        draw_plot(closep, plt, ax3, "Sliding window with regression")
+        draw_segments(segments,'blue')
+        plt.ylabel('Stock Price')
+        plt.title("BOTTOM UP - ERROR "+str(evaluate_global_error(closep, segments)), color='Yellow', fontweight='bold')
+
+        plt.subplots_adjust(hspace=0.3)
+        plt.show()
+
+    except e:
+        print("Error")
 
 def draw_plot(data, plt,ax,plot_title):
     ax.plot(range(len(data)), data, alpha=0.8, color='black')
@@ -259,11 +329,12 @@ if __name__ == '__main__':
 
     # Data is fetched from db
     stock = input("Stock name: ")
-    err = input("Max error: ")
+    # err = input("Max error: ")
     res = fetch_data_from_db(connection, stock)
 
     # Figure is built
-    draw_window(MY_DPI, res, float(err))
+    draw_window(MY_DPI, res)
+    # draw_window(MY_DPI, res, float(err))
     # draw_window_API(MY_DPI, float(err), stock)
 
 
